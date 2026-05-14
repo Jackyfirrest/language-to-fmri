@@ -253,9 +253,3 @@ The final written report is included here:
 - [lab3.pdf](/C:/Users/jackyfirst/Downloads/lab-3-group-08/report/lab3.pdf)
 - [LaTeX sources](/C:/Users/jackyfirst/Downloads/lab-3-group-08/report/lab3_tex_files)
 - [report figures](/C:/Users/jackyfirst/Downloads/lab-3-group-08/report/figures)
-
-## Notes
-
-- This repository currently does not include a `LICENSE` file.
-- `report/collaboration.txt` is intentionally preserved as part of the original course project record.
-- `data/` and `results/` may exist locally but are mostly ignored in git because they store large artifacts.
