@@ -1,0 +1,24 @@
+name: lab3
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - joblib
+  - matplotlib
+  - jupyter
+  - ipykernel
+  - tables          # PyTables / HDF5, used by SemanticModel.py
+  - pip
+  - pip:
+      - gensim              # Word2Vec (KeyedVectors)
+      - lime                # local interpretable explanations for Lab 3.3
+      - torch               # BERT fine-tuning (provided/data.py, fine_tune_bert.py)
+      - transformers        # BertTokenizerFast
+      - huggingface-hub     # push datasets to Hugging Face
+      - tqdm                # progress bars

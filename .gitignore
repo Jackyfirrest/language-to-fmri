@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.env
+.envrc
+.venv/
+venv/
+env/
+ENV/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.pyre/
+.pytype/
+.tox/
+.nox/
+.cache/
+.ipynb_checkpoints/
+
+# Build artifacts
+build/
+dist/
+site/
+*.egg-info/
+
+# Editors
+.idea/
+.vscode/
+.cursorignore
+.cursorindexingignore
+.claude
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+slurm-*.out
+logs/
+code/embeddings/logs/
+code/ridge_regression/logs/
+checkpoints/
+
+# Large project data and generated results
+data/
+results/
+/scratch/
+figs/
+
+# Large binary artifacts
+*.npy
+*.npz
+*.pkl
+*.h5
+*.ckpt

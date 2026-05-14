@@ -1,0 +1,452 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\setlength\parindent{0pt}
+\setlength{\parskip}{0.7em}
+
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.6\baselineskip}{0.2\baselineskip}
+\titlespacing*{\subsection}{0pt}{0.4\baselineskip}{0.1\baselineskip}
+\titlespacing*{\subsubsection}{0pt}{0.3\baselineskip}{0.1\baselineskip}
+
+\usepackage{enumitem}
+\setlist{nosep, topsep=2pt}
+
+\usepackage{graphicx}
+\graphicspath{{../results/interpretation/}}
+
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage[hidelinks]{hyperref}
+
+\title{Interpretation: SHAP and LIME Analysis --- Lab 3\\
+       \large Connecting Language to fMRI, Stat 214, Spring 2026\vspace{-1em}}
+\date{}
+
+\begin{document}
+\maketitle
+
+
+\section{Interpretability Study}
+
+
+Having established that the LoRA-fine-tuned BERT model with middle-layer pooling
+(\texttt{finetuned\_lora\_mid4\_mean}) achieves the best voxelwise prediction
+($\bar{r} = 0.0374$ for s2, $0.0512$ for s3), we ask \emph{what} each voxel is
+responding to.  We apply two complementary attribution methods to the fitted
+linear encoding model: closed-form linear SHAP identifies which BERT feature
+dimensions drive predictions globally, and LIME isolates specific words within
+individual stories that most influence particular voxels.  Both analyses are
+conducted on the top-256 best-predicted voxels across two thematically distinct
+test stories: \textit{On Approach to Pluto} (space exploration) and
+\textit{Marry a Man Who Loves His Mother} (interpersonal relationships).
+Predicted and observed BOLD response traces are shown for the four rank-1
+voxels, with highlighted windows marking the local context used for LIME.
+
+
+\subsection{Methods}
+
+
+\subsubsection{SHAP for Linear Encoding Models}
+
+The encoding model predicts voxel responses as $\hat{y}_i = \bm{X}_i \bm{w}$,
+where $\bm{X}_i \in \mathbb{R}^{T \times 3072}$ is the delay-stacked embedding
+matrix for story~$i$ and $\bm{w} \in \mathbb{R}^{3072}$ is the ridge-regression
+weight vector for a given voxel.  Because $\bm{X}$ is z-scored before fitting,
+the expected background value is zero and the linear SHAP attribution simplifies
+to a closed form: the contribution of feature dimension~$j$ at time step~$t$ is
+\begin{equation}
+  \phi_j(x) = w_j (x_j - \mathbb{E}[x_j])
+  \label{eq:shap}
+\end{equation}
+Global feature importance aggregates over the top-256 voxels:
+\begin{equation}
+  I_j = \sum_{v \in \mathcal{V}_{256}}
+        \bigl|\phi_j^{(v)}\bigr|_{\text{mean}} \cdot \bigl|r_v\bigr|,
+\end{equation}
+where the outer weight $|r_v|$ up-weights voxels with stronger test correlations.
+The 3072 feature dimensions correspond to four hemodynamic delay blocks
+(delays 1--4\,TR $= 2$--8\,s), each of size 768 (the BERT hidden dimension).
+We report importance both at the full feature level (3072 dims) and aggregated
+across delay blocks to the 768 BERT dimension level.
+
+Per-story word attribution maps each word to the TR in which it falls and
+assigns the aggregate SHAP magnitude for that TR:
+$\text{score}(w) = \sum_j |\phi_j(t_w)|$,
+where $t_w$ is the TR index of word~$w$.  Because multiple words share the same
+TR (at $\sim$3\,words/s with TR\,=\,2\,s, each TR contains up to six words),
+words within the same TR receive identical scores.  This TR-resolution limitation
+is addressed by LIME, which operates at the individual-word level.
+
+\subsubsection{LIME with Word Masking}
+
+LIME~(Ribeiro et al., 2016) approximates the local behavior of the encoding
+model around a given input story by fitting a sparse linear surrogate on
+perturbed inputs.  We represent each story as a binary vector over its unique
+word types and generate 300 perturbations by randomly masking subsets of words.
+Masking is implemented by zeroing all delay-block contributions of a word's
+TR in the pre-built design matrix $\bm{X}$, preserving the original temporal
+structure of surrounding context.  The ridge model then predicts the response
+for each perturbed design matrix, and a weighted ridge regression on the binary
+perturbation vectors fits the local linear surrogate.  The resulting
+coefficients give each word a positive or negative contribution to the predicted
+BOLD response of a target voxel.
+
+The local window for LIME is defined as the 5-TR peak-response segment
+(yellow shaded region in the response trace figures), identified as the
+contiguous window with the highest mean absolute predicted BOLD signal during
+that story.  Surrogate predictions average the model output across this
+window, so LIME coefficients reflect how each word shifts the response
+specifically during the most informative portion of the story.
+
+We apply LIME to the three highest-ranked voxels (by test correlation $r$) for
+each story, reporting the top positive contributors.
+
+
+\subsection{SHAP Results}
+
+
+\subsubsection{Dominant BERT Dimensions}
+
+Figure~\ref{fig:shap_bertdim} shows the top-20 BERT dimensions by aggregate
+SHAP importance for each subject.  The importance is broadly distributed across
+all 768 dimensions with no single dominant axis, reflecting the high
+dimensionality of the contextual embeddings.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/shap/s2_finetuned_lora_mid4_mean_shap_bert_dim_top20.png}
+    \caption{Subject s2}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/shap/s3_finetuned_lora_mid4_mean_shap_bert_dim_top20.png}
+    \caption{Subject s3}
+  \end{subfigure}
+  \caption{Top-20 BERT dimensions by aggregated SHAP importance for the
+           \texttt{finetuned\_lora\_mid4\_mean} model.  Each bar is the mean
+           absolute SHAP value across the top-256 voxels, weighted by test
+           correlation.  The importance is distributed across many dimensions,
+           with no single axis dominating.}
+  \label{fig:shap_bertdim}
+\end{figure}
+
+Despite the distributed pattern, several dimensions recur across subjects.
+BERT dimension~586 ranks 2nd for both s2 and s3, and dimension~539 appears in
+the top-10 for both (Table~\ref{tab:top_bertdims}).  The importance values for
+s2 are consistently higher (0.050--0.075) than for s3 (0.049--0.061), consistent
+with the overall higher predictability of s3 spreading encoding signal across a
+broader set of dimensions.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabular}{lrrr}
+    \toprule
+    & \multicolumn{2}{c}{Rank} & \\
+    \cmidrule(lr){2-3}
+    BERT dim & s2 & s3 & Shared \\
+    \midrule
+    586 & 2 & 2 & \checkmark \\
+    539 & 8 & 5 & \checkmark \\
+    160 & 1 & -- & \\
+    19  & 2 & -- & \\
+    545 & -- & 1 & \\
+    536 & -- & 2 & \\
+    \bottomrule
+  \end{tabular}
+  \caption{Selected BERT dimensions from the top-10 SHAP ranking.  Dimensions
+           shared across subjects (586, 539) represent candidate universally
+           brain-relevant semantic axes.}
+  \label{tab:top_bertdims}
+\end{table}
+
+
+
+Examining importance at the full 3072-dimensional feature level reveals a
+consistent pattern: for both subjects, the highest-ranked features overwhelmingly
+belong to delay block~1 (1\,TR\,=\,2\,s lag).  Of the top-10 features for s2,
+eight are from delay block~1; for s3, nine of ten.  The same BERT dimension
+(e.g., dim~160 for s2) contributes at delay block~1 (rank~1) and again at
+delay block~2 (rank~4), but with lower importance at the longer lag.
+
+This dominance of the 2\,s lag is somewhat surprising given that the canonical
+hemodynamic response function (HRF) peaks at approximately 5--6\,s.  It likely
+reflects two factors: (1) ridge regression fits all four delays simultaneously
+and can assign weight to early onsets of the neural response, and (2) naturalistic
+narrative language exhibits strong temporal autocorrelation, so nearby lags carry
+overlapping semantic information that inflates the apparent weight of short delays.
+
+
+
+Figure~\ref{fig:shap_words} shows the top-20 words by SHAP score for each of the
+two target stories for subject s2.  Because SHAP attribution operates at TR
+resolution, words that co-occur within the same 2\,s window receive identical
+scores; tied bars therefore reflect a shared high-salience time window rather
+than individual word salience.
+
+For the Pluto story, the dominant TRs contain age and temporal markers
+(``year'', ``old'', ``five'', ``three'') clustered around a passage describing
+the multi-year journey, along with motion verbs (``move'').  For the relationship
+story, the dominant TR contains a dense cluster of physical-scene nouns
+(``wooden'', ``chair'', ``propped'', ``foot'', ``against''), reflecting a
+vivid spatial description that drives a concentrated burst of cortical activity.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/shap/s2_finetuned_lora_mid4_mean_onapproachtopluto_shap_words_top20.png}
+    \caption{\textit{On Approach to Pluto}, s2}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/shap/s2_finetuned_lora_mid4_mean_marryamanwholoveshismother_shap_words_top20.png}
+    \caption{\textit{Marry a Man\ldots}, s2}
+  \end{subfigure}
+  \caption{Top-20 words by SHAP score for subject s2.  Words sharing the same bar height belong to the same TR (2\,s window).  }
+  \label{fig:shap_words}
+\end{figure}
+
+
+\subsection{LIME Results and Response Traces}
+
+
+LIME resolves word-level attribution for the three top-ranked voxels per story.
+Positive coefficients indicate words whose presence increases the voxel's
+predicted BOLD response.  Response trace figures accompany the rank-1 voxels,
+showing observed (blue) and predicted (orange) BOLD signals over the full story
+with the yellow shaded region marking the 5-TR peak window used as the LIME
+prediction target.
+
+\subsubsection{Story: \textit{On Approach to Pluto} (Space Exploration)}
+
+This story narrates the New Horizons spacecraft's multi-year journey to Pluto,
+culminating in the July 2015 flyby.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/lime/onapproachtopluto/voxel63900_rank1_response.png}
+    \caption{s2, rank-1 voxel (63900) --- response trace}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/lime/onapproachtopluto/voxel28817_rank1_response.png}
+    \caption{s3, rank-1 voxel (28817) --- response trace}
+  \end{subfigure}
+  \caption{Observed (blue) and predicted (orange) BOLD response for the
+           rank-1 voxel per subject during \textit{On Approach to Pluto}.
+           The yellow shaded region marks the 5-TR peak window where LIME
+           attributions are computed.}
+  \label{fig:resp_pluto}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/lime/onapproachtopluto/voxel63900_rank1_lime.png}
+    \caption{s2, rank-1 voxel (63900)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/lime/onapproachtopluto/voxel28817_rank1_lime.png}
+    \caption{s3, rank-1 voxel (28817)}
+  \end{subfigure}
+  \caption{LIME word importances for \textit{On Approach to Pluto}, rank-1 voxel
+           per subject.  Attributions correspond to the highlighted window in
+           Figure~\ref{fig:resp_pluto}.}
+  \label{fig:lime_pluto_rank1}
+\end{figure}
+
+
+
+The response traces (Figure~\ref{fig:resp_pluto}) show that the model tracks the
+broad temporal envelope of the BOLD signal, with the predicted trace following
+the shape of the observed response.  The peak window falls in the mid-story
+portion where the narration shifts from scene-setting to active mission
+description.  Prediction quality is visibly higher during the highlighted peak
+than at quiet story segments, consistent with the voxels being selectively driven
+by dense semantic content rather than baseline speech.
+
+Across both subjects and both top voxels, the leading LIME words are temporal
+markers and goal-directed action verbs tied to the mission narrative:
+\texttt{july}, \texttt{fourth}, \texttt{decided}, \texttt{horizons},
+\texttt{working}, \texttt{long}.  The word \texttt{i} (the narrator's
+first-person voice) is prominent for s2, likely reflecting moments of personal
+reflection that co-occur with high-salience mission content.  The word
+\texttt{fourth} appears in both subjects' rank-2 voxels alongside \texttt{july},
+confirming that the same passage drives activity in spatially neighbouring
+voxels.
+
+\subsubsection{Story: \textit{Marry a Man Who Loves His Mother} (Interpersonal Relationships)}
+
+This story depicts close interpersonal dynamics, domestic settings, and social
+negotiations between characters.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel32384_rank1_response.png}
+    \caption{s2, rank-1 voxel (32384) --- response trace}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel25884_rank1_response.png}
+    \caption{s3, rank-1 voxel (25884) --- response trace}
+  \end{subfigure}
+  \caption{Observed and predicted BOLD response for the rank-1 voxel per subject
+           during \textit{Marry a Man Who Loves His Mother}.  The yellow region
+           marks the 5-TR peak window used by LIME.}
+  \label{fig:resp_marry}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel32384_rank1_lime.png}
+    \caption{s2, rank-1 voxel (32384)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel25884_rank1_lime.png}
+    \caption{s3, rank-1 voxel (25884)}
+  \end{subfigure}
+  \caption{LIME word importances for \textit{Marry a Man Who Loves His Mother},
+           rank-1 voxel per subject.  Attributions correspond to the highlighted
+           window in Figure~\ref{fig:resp_marry}.}
+  \label{fig:lime_marry_rank1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s2/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel32271_rank2_lime.png}
+    \caption{s2, rank-2 voxel (32271)}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{s3/finetuned_lora_mid4_mean/lime/marryamanwholoveshismother/voxel25885_rank2_lime.png}
+    \caption{s3, rank-2 voxel (25885)}
+  \end{subfigure}
+  \caption{LIME word importances for \textit{Marry a Man Who Loves His Mother},
+           rank-2 voxel per subject.}
+  \label{fig:lime_marry_rank2}
+\end{figure}
+
+The response traces (Figure~\ref{fig:resp_marry}) place the highlighted window
+in the latter portion of the story, where social negotiation between characters
+reaches its narrative climax.  The model predictions closely follow the observed
+signal in this region, again illustrating that prediction accuracy is
+concentrated in semantically rich passages.
+
+An inter-subject divergence emerges from the LIME attributions.  For s2,
+high-importance words are relational verbs and adverbs describing co-habitation
+and joint decisions: \texttt{miles}, \texttt{together}, \texttt{live},
+\texttt{decided}, \texttt{asked}.  For s3, the leading terms are more concrete
+physical-proximity and social-boundary words: \texttt{door}, \texttt{hand},
+\texttt{came}, \texttt{let}, \texttt{soldier}, \texttt{wouldn't}.
+
+Notably, the rank-1 and rank-2 voxels for each subject are immediate neighbours
+in voxel index (s2: 32384 and 32271; s3: 25884 and 25885), yet their LIME
+profiles diverge at a fine resolution while sharing the same social-proximity
+theme.  This within-subject consistency is consistent with a smooth gradient of
+semantic tuning in higher temporal cortex.
+
+
+\subsection{Comparison of SHAP and LIME}
+
+\subsubsection{Interpreted Results Layout}
+SHAP and LIME answer related but distinct questions about the encoding model and
+are best understood as complementary lenses rather than competing methods.
+Table~\ref{tab:shap_vs_lime} summarises their key properties.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    & \textbf{SHAP} & \textbf{LIME} \\
+    \midrule
+    Scope        & Global across all test stories & Local to one story + one voxel \\
+    Granularity  & BERT dim (768) + delay block   & Individual word token \\
+    Attribution  & Closed-form: $\phi_j = X_{tj} w_j$ & Local linear surrogate (300 samples) \\
+    Background   & Zero (z-scored features)       & Word masked to zero \\
+    Time resolution & TR-level (2\,s windows)    & Word-level \\
+    Output       & Feature importance across voxels & Word importance for peak window \\
+    \bottomrule
+  \end{tabular}
+  \caption{Comparison of SHAP and LIME attribution methods as applied to the
+           linear fMRI encoding model.}
+  \label{tab:shap_vs_lime}
+\end{table}
+
+\subsubsection{Scope and Granularity}
+
+SHAP operates globally: it aggregates over the entire test set and all 256
+voxels to identify which BERT dimensions are systematically important across
+stories and brain regions.  Its closed-form formula~(\ref{eq:shap}) requires no
+sampling and is exact for linear models.  The cost is temporal resolution ---
+because importance is averaged over all time steps, SHAP cannot resolve which
+moments within a story drive the response.
+
+LIME inverts this trade-off.  By constructing a local surrogate around the 5-TR
+peak window of a single voxel's response, it achieves individual-word precision.
+However, the 300-perturbation budget introduces sampling variance, the result is
+specific to one story window and one voxel, and the local linear approximation
+may not generalise to the broader response.
+
+\subsubsection{Convergence on Key Content}
+
+Despite their different scopes, SHAP and LIME converge on the same high-level
+story content for both test stories.  For the Pluto story, SHAP identifies
+TRs containing time-related vocabulary (``year'', ``old'', ``move'') as globally
+important, and LIME independently assigns the highest word-level weights to
+temporal mission markers (\texttt{july}, \texttt{fourth}, \texttt{working},
+\texttt{long}) within the peak window.  For the relationship story, SHAP
+highlights the dense spatial-description TR (``wooden'', ``chair'', ``propped''),
+and LIME picks out the social-proximity words (\texttt{together},
+\texttt{live}, \texttt{door}, \texttt{hand}) that dominate the narrative climax
+window.
+
+This cross-method agreement strengthens confidence that the identified content
+reflects genuine neural selectivity rather than an artefact of either method's
+design.
+
+\subsubsection{Complementary Strengths}
+
+The two methods provide distinct, non-redundant information:
+
+\begin{itemize}
+  \item \textbf{SHAP reveals latent BERT structure.}  By attributing importance
+        to individual dimensions of the 768-dimensional BERT space, SHAP shows
+        that brain-relevant semantic information is distributed across many
+        dimensions (no single axis dominates) and is concentrated in early
+        hemodynamic delays (delay block 1, 2\,s lag).  These findings hold
+        globally across all stories and voxels and cannot be obtained from LIME,
+        which operates on raw words rather than BERT features.
+
+  \item \textbf{LIME reveals narrative-specific word salience.}  By linking
+        response peaks to specific word tokens, LIME grounds the model's
+        predictions in interpretable story content (mission dates, social
+        actions) and enables comparison across subjects and adjacent voxels.
+        SHAP word scores --- which assign the same value to all words in the
+        same TR --- cannot distinguish between, say, \texttt{july} and
+        \texttt{fourth} even though LIME shows them to have different
+        contributions.
+
+  \item \textbf{Response traces contextualise LIME windows.}  The predicted
+        vs.\ observed traces (Figures~\ref{fig:resp_pluto}
+        and~\ref{fig:resp_marry}) show that LIME's peak window corresponds to a
+        moment of genuinely high predictive accuracy, validating that the local
+        surrogate is explaining real signal rather than noise.  This cross-
+        check is only possible because the encoding model provides continuous
+        predictions that can be plotted against ground-truth BOLD.
+\end{itemize}
+
+
+
+\end{document}

@@ -1,0 +1,20 @@
+\section{Introduction}
+
+Understanding how the brain processes language is one of the central questions in cognitive neuroscience. When we listen to a story, different regions of the brain respond in distinct ways, some track sounds, others track meaning, and others integrate information across sentences. Functional MRI (fMRI) lets us measure these responses at the level of individual voxels, small cubic regions of brain tissue, by recording changes in blood-oxygen levels (BOLD signal) as a subject listens. If we can build a model that accurately predicts these voxel responses from the text of what someone heard, it can help to understand how the brain processes language.
+
+
+This lab tackles exactly that problem. We work with data from two subjects (\textit{s2} and \textit{s3}) collected by the Huth Lab at UT Austin \cite{jain2018incorporating}, who each listened to a set of podcast stories while lying in an fMRI scanner. The goal is to learn a mapping from the words in each story to the corresponding brain responses, using text embeddings as input features and ridge regression as the model. The core question is how much the choice of embedding matters: does it make a difference whether we represent words as simple counts, as dense semantic vectors, or as context-sensitive representations from a large language model?
+
+
+We evaluate several embedding configurations of increasing sophistication across five families---Bag-of-Words (BoW), Word2Vec, GloVe, and BERT-based variants, and LoRA fine-tuned configurations differing in training recipe and extraction layers---and ask whether different methods predict the same voxels, where the gains from contextual models are concentrated, and what individual words drive predictions in the best-performing voxels using SHAP and LIME.
+
+\section{Data}
+\label{sec:data}
+\subsection{fMRI and Text Data}
+\label{sec:data-fmri}
+
+The data come from the Huth Lab at UT Austin \cite{jain2018incorporating} and consist of whole-brain BOLD fMRI recordings from two subjects (\textit{s2} and \textit{s3}) listening to 101 naturalistic podcast stories.  BOLD responses were acquired at a repetition time of $\text{TR} = 2$\,s, yielding 256 raw volumes per story.  Subject~\textit{s2} has 94{,}251 cortical voxels and subject~\textit{s3} has 95{,}556 voxels.
+
+For each subject--story pair, the fMRI signal is a matrix $\bm{Y} \in \mathbb{R}^{T \times V}$, where $T$ is the number of usable scan timepoints per story (after trimming scanner equilibration and the post-stimulus BOLD tail, detailed in Section~\ref{sec:ridge}) and $V$ is the number of cortical voxels.  Alongside the fMRI data, we have word-level transcripts with precise onset timestamps, which are used to align each word's text embedding to the TR time grid.
+
+Stories were divided at the story level into 81 training stories and 20 test stories.  All models are fitted exclusively on training stories and evaluated on the held-out test stories, keeping the two splits completely separate throughout.

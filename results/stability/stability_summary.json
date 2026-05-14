@@ -1,0 +1,114 @@
+{
+  "check1": {
+    "true_median_cc": 0.009905952960252762,
+    "null_mean_cc": 9.892056550597772e-05,
+    "null_std_cc": 0.0006423684535548091,
+    "fold_above_null": 100.14048049143179,
+    "frac_beats_all_nulls": 0.356250862059819
+  },
+  "check2": {
+    "story_pearson_r": 0.3927574819456117,
+    "story_scores_s2": {
+      "adventuresinsayingyes": 0.014211084693670273,
+      "beneaththemushroomcloud": 0.016461504623293877,
+      "birthofanation": 0.0018757646903395653,
+      "canplanetearthfeedtenbillionpeoplepart1": 0.002233644248917699,
+      "fromboyhoodtofatherhood": 0.023263610899448395,
+      "goingthelibertyway": 0.012411726638674736,
+      "igrewupinthewestborobaptistchurch": 0.008096451871097088,
+      "inamoment": 0.00618689926341176,
+      "itsabox": 0.010090401396155357,
+      "leavingbaghdad": 0.01585961878299713,
+      "marryamanwholoveshismother": 0.0159740187227726,
+      "mayorofthefreaks": 0.01723518595099449,
+      "onapproachtopluto": 0.01917075924575329,
+      "reachingoutbetweenthebars": 0.020398862659931183,
+      "stumblinginthedark": 0.02176731824874878,
+      "superheroesjustforeachother": 0.0029775737784802914,
+      "thatthingonmyarm": 0.012944897636771202,
+      "theadvancedbeginner": 0.005400162190198898,
+      "vixenandtheussr": 0.010926571674644947,
+      "wildwomenanddancingqueens": 0.025624409317970276
+    },
+    "story_scores_s3": {
+      "adventuresinsayingyes": 0.029891015961766243,
+      "beneaththemushroomcloud": 0.029089387506246567,
+      "birthofanation": 0.024050572887063026,
+      "canplanetearthfeedtenbillionpeoplepart1": 0.013902203179895878,
+      "fromboyhoodtofatherhood": 0.032851360738277435,
+      "goingthelibertyway": 0.029573027044534683,
+      "igrewupinthewestborobaptistchurch": 0.01670992001891136,
+      "inamoment": 0.019146360456943512,
+      "itsabox": 0.014676072634756565,
+      "leavingbaghdad": 0.021482355892658234,
+      "marryamanwholoveshismother": 0.03403369337320328,
+      "mayorofthefreaks": 0.026599740609526634,
+      "onapproachtopluto": 0.03620100021362305,
+      "reachingoutbetweenthebars": 0.019146686419844627,
+      "stumblinginthedark": 0.015607585199177265,
+      "superheroesjustforeachother": 0.021233368664979935,
+      "thatthingonmyarm": 0.016917694360017776,
+      "theadvancedbeginner": 0.019614215940237045,
+      "vixenandtheussr": 0.01819736510515213,
+      "wildwomenanddancingqueens": 0.021724410355091095
+    },
+    "s2_mean_cc": 0.012760495766997337,
+    "s3_mean_cc": 0.021931946277618408,
+    "s2_n_voxels": 94251,
+    "s3_n_voxels": 95556
+  },
+  "check3": {
+    "n_voxels": 94251,
+    "methods": [
+      "glove",
+      "pretrained_bert",
+      "finetuned_lora"
+    ],
+    "mean_cc": {
+      "glove": 0.012760495766997337,
+      "pretrained_bert": 0.034886159002780914,
+      "finetuned_lora": 0.03461335599422455
+    },
+    "median_cc": {
+      "glove": 0.009905952960252762,
+      "pretrained_bert": 0.02953573688864708,
+      "finetuned_lora": 0.02889617532491684
+    },
+    "profile_pearson_r": {
+      "glove_vs_pretrained_bert": 0.7334963609368711,
+      "glove_vs_finetuned_lora": 0.7449045969534319,
+      "pretrained_bert_vs_finetuned_lora": 0.9756996160831177
+    },
+    "top5pct_jaccard": {
+      "glove_vs_pretrained_bert": 0.49476688867745006,
+      "glove_vs_finetuned_lora": 0.49714104193138503,
+      "pretrained_bert_vs_finetuned_lora": 0.8709805478364431
+    }
+  },
+  "meta": {
+    "date": "2026-05-05T15:54:34.639955",
+    "n_permutations": 7,
+    "top_percentile": 5,
+    "alphas": [
+      1.0,
+      2.1544346809387207,
+      4.6415886878967285,
+      10.0,
+      21.544347763061523,
+      46.415889739990234,
+      100.0,
+      215.44346618652344,
+      464.15887451171875,
+      1000.0
+    ],
+    "subjects": {
+      "s2": "subject2",
+      "s3": "subject3"
+    },
+    "methods_check3": [
+      "glove",
+      "pretrained_bert",
+      "finetuned_lora"
+    ]
+  }
+}

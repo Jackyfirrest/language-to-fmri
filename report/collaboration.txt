@@ -1,0 +1,18 @@
+1. Ricardo Perez Castillo — Project Structure & Oversight
+   • Overall project architecture and pipeline design
+   • Ridge regression framework setup (code/ridge_regression/)
+   • Embeddings pipeline foundation (code/embeddings/)
+   • Enhanced BERT
+   
+2. Gongyao Xu — SHAP Analysis & Interpretation
+   • SHAP explainability for top voxels (shap_analysis.py, extract_top_voxels.py)
+   • Story-level feature importance visualizations
+   • Report composition
+
+3. Chunkai Hsu — LIME Analysis & Word-level Interpretation
+   • LIME word-level attribution for individual voxels (lime_story_voxel_analysis.py)
+   • Word masking and local surrogate fitting around peak neural response windows
+
+4. Shizhe Zhang— LoRA Fine-tuning & Stability Analysis
+   • LoRA fine-tuning of BERT on story data
+   • Stability and cross-subject replication analysis;

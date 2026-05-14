@@ -1,0 +1,116 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\setlength\parindent{0pt}
+\setlength{\parskip}{0.7em}
+
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.6\baselineskip}{0.2\baselineskip}
+\titlespacing*{\subsection}{0pt}{0.4\baselineskip}{0.1\baselineskip}
+\titlespacing*{\subsubsection}{0pt}{0.3\baselineskip}{0.1\baselineskip}
+
+\usepackage{enumitem}
+\setlist{nosep, topsep=2pt}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{bm}
+\usepackage[hidelinks]{hyperref}
+
+% docmute strips \documentclass/\begin{document}/\end{document} from \input files
+\usepackage{docmute}
+
+\title{Lab 3 Report: Connecting Language to fMRI\\
+       }
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{intro_data}
+
+\graphicspath{{results/regression/}}
+\input{method}
+
+
+\graphicspath{{results/interpretation/}}
+\input{shap_lime}
+
+
+\graphicspath{{results/stability/}}
+\input{stability}
+
+
+\section{Discussion}
+In this study, we investigated human cortical processing of language by evaluating various text embedding models against fMRI responses in different regions of the human brain. Our results demonstrate a clear hierarchy in predictive power: contextualized language models (BERT) vastly outperform static semantic vectors including GloVe and Word2Vec, which in turn outperform non-semantic baseline Bag-ofWords. This progression underscores that contextual integration in embeddings are more likely applied in actual language representation in cortical processing rather than isolated processing of static lexical items.
+
+
+The stark performance gap between static word vectors (GloVe, Word2Vec) and contextualized models (Base and Fine-tuned BERT) illustrates that contextual integration is essential human language comprehension. Static embeddings functioning with isolated lexical values assigns a fixed coordinate to a word regardless of its surrounding syntax or background story, whic is not fitting to represent the human brain actively that integrates temporal context, continuously updating its semantic representations based on previous discourse. The superior predictive correlation of BERT indicates that self-attention mechanism captures such dynamic integration more successfully, giving it a better performance in predicting BOLD signal fluctuations in higher-order language networks.
+
+
+One revealing finding of our study is the layer phenomenon observed within the BERT architecture. The significant performance boost achieved by extracting representations from the middle layers (layers 5--8) rather than the final layers (layers 9--12) provides a critical window into how deep learning architectures diverge from biological networks. Instead of processing from basic acoustic/lexical features in early layers to complex syntactic and semantic structures in the middle, the highest layers, however, become hyper-specialized for the model's pre-training objective of word prediction, or in this case, Masked Language Modeling. Our results suggest that the generalized semantic structures formed in the middle layers align most naturally with human cortical processing, whereas the top-layer MLM representations represent an algorithmic artifact that does not seem to align with raw fMRI data.
+
+
+
+
+Despite these insights, our approach is constrained by the reliance on a strictly linear mapping function of Ridge regression. While linear models are standard in fMRI encoding to prevent overfitting and ensure interpretability, they implicitly assume that the brain's semantic space is a direct linear projection of the Transformer's latent space. Future work should explore whether non-linear mappings can capture additional variance without sacrificing the interpretability provided by SHAP. Incorporating joint multimodal models that process both the raw audio waveform and the semantic text could decouple low-level auditory processing from high-level semantic integration, providing a more comprehensive model of naturalistic language comprehension.
+
+
+
+\section{Conclusion}
+
+This study successfully demonstrated that contextually integrated embedding models provide a vastly superior computational framework for modeling human cortical language processing compared to static and non-semantic baseline models. By mapping various text embeddings to fMRI BOLD responses using Ridge regression, we observed a clear progression in predictive accuracy: models that dynamically integrate temporal and syntactic context, such as Enhanced BERT, most successfully modeled the biological process of human language comprehension in the human brain. 
+
+Our investigation into the internal architecture of embedding models yielded several insights. Specifically, the layer-wise performance disparity revealed that the middle layers of BERT align most robustly with generalized human semantic processing. Conversely, the highest layers exhibit a divergence from biological processing, likely due to overfitting of the word prediction objective. Furthermore, the plateau in predictive gains following LoRA fine-tuning on the podcast corpus suggests a near-optimal result for BERT models, while also implying that while foundational models already capture rich naturalistic representations, the MLM objective itself may not perfectly approximate human predictive coding.
+
+Finally, the integration of feature attribution methods, namely SHAP and LIME, was instrumental in moving beyond black-box predictive metrics for our language modeling. By explicitly linking highly predicted voxels to semantically relevant stimulus words, we provided essential biological validation that our models successfully captured localized neural tuning curves rather than exploiting mathematical artifacts. Ultimately, this work highlights the immense potential of pairing modern Fine-Tuning methodologies with robust interpretability frameworks to investigate the cognitive architecture of language. 
+
+\section*{Academic Honesty Statement}
+\subsection{Statement}
+The work in this report is our own and all the sources used are properly cited. Academic research honesty is important because science is built on truth.
+\subsection{LLM Usage}
+
+
+\subsubsection*{Coding}
+\begin{itemize}
+    \item Team member 1: I used Anthropic's Claude to understand better how to improve code, to suggest ways to "prettify" some of the visuals.
+    \item Team member 2: I used Gemini to brainstorm possible ways of implementing models. I also used this model to polish my already-existing writings.
+    \item Team member 3:  I used ChatGPT to clean the code, create documentation, and brainstorm the method in order to improve the performance.
+    \item Team member 4:  I used Claude Code to modify the style of code, create documentation, and help me plot figures.
+\end{itemize}
+
+\subsubsection*{Writing}
+\begin{itemize}
+    \item Used to find grammatical errors and LaTeX formatting (e.g. tables).
+\end{itemize}
+
+
+
+\bibliographystyle{plain}
+\bibliography{refs}
+\bibitem{jain2018incorporating}
+Jain, S., \& Huth, A. (2018).
+Incorporating context into language encoding models for fMRI.
+\textit{Advances in Neural Information Processing Systems}, 31.
+
+
+\bibitem{hu2022lora}
+Hu, E., et al. (2022). LoRA: Low-rank adaptation of large language models.
+\textit{ICLR 2022}.
+
+\bibitem{lundberg2017unified}
+Lundberg, S. M., \& Lee, S.-I. (2017).
+A unified approach to interpreting model predictions.
+\textit{Advances in Neural Information Processing Systems}, 30.
+
+\bibitem{ribeiro2016why}
+Ribeiro, M. T., Singh, S., \& Guestrin, C. (2016).
+"Why should I trust you?": Explaining the predictions of any classifier.
+\textit{Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining}.
+\end{document}

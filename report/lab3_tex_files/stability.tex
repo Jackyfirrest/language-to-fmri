@@ -1,0 +1,183 @@
+\documentclass[letterpaper,12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\setlength\parindent{0pt}
+\setlength{\parskip}{0.8em}
+
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.5\baselineskip}{0.2\baselineskip}
+\titlespacing*{\subsection}{0pt}{0.4\baselineskip}{0.1\baselineskip}
+
+\usepackage{enumitem}
+\setlist{nosep, topsep=2pt}
+
+\usepackage{graphicx}
+\graphicspath{{figures/stability/}}
+
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[hidelinks]{hyperref}
+
+\title{Stability Analysis --- Lab 3\\
+       \large Connecting Language to fMRI, Stat 214, Spring 2026\vspace{-1em}}
+\date{}
+
+\begin{document}
+\maketitle
+
+
+\section{Stability Analysis}
+
+In the previous studies we have shown the variation of test results based on different choices of embedding
+method, we will then assess the stability of out method based on whether they are robust to the choice
+of subject.
+In other words, does the ridge regression encoding model capture a real,
+generalisable language-to-brain mapping that replicates across individuals,
+or is it overfitting to idiosyncratic noise in one subject's data?
+This is the central stability question, examined at four complementary levels
+of granularity in this part
+We apply this test to the \textbf{best-performing model} --- LoRA BERT
+mid4$\star$ (layers 5--8 average, $d = 768$, delay-stacked to 3{,}072
+features) --- on both subjects \textit{s2} (94{,}251 voxels) and \textit{s3}
+(95{,}556 voxels).
+Since a conservative test on a
+weaker model would understate the replication that is actually achievable, we choose to only perform stability analysis on the best-performing model.
+
+
+
+\subsection{Motivation}
+
+If the encoding model captures a real, generalizable language-to-brain
+mapping, the pattern of results should replicate across individuals even
+though the two subjects differ physiologically and in brain coverage.
+Direct voxel-index comparison is invalid: s2 has 94{,}251 voxels and s3
+has 95{,}556, each in its own native space with no spatial registration.
+We therefore assess replication at four complementary levels that do not
+require a common voxel coordinate system, using the saved weight matrix
+$W \in \mathbb{R}^{3072 \times n_\text{voxels}}$ from the LoRA mid4
+ridge model.
+
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{Story-level mean CC.}  For each subject, apply the fitted
+        weights to the z-scored test embeddings, then compute the mean
+        per-voxel Pearson~$r$ restricted to each of the 20 test stories.
+        The resulting 20-dimensional profile is subject-count agnostic
+        and directly comparable across subjects.
+  \item \textbf{Per-story sorted bar chart.}  Visualise both profiles
+        simultaneously, sorted by average CC, to identify which stories
+        are universally easy or hard for the model to predict.
+  \item \textbf{Voxelwise CC distributions.}  Compare the full
+        per-voxel CC histograms for s2 and s3 to determine whether the
+        s3 advantage is localised (a few high-CC voxels) or a uniform
+        population-level shift.
+\end{enumerate}
+
+Additionally, we examine how the \textbf{cross-subject CC ratio}
+($\overline{r}_{s3}/\overline{r}_{s2}$) varies across all eight embedding
+methods to show that the replication pattern is not specific to LoRA mid4.
+
+\subsection{Results}
+
+\paragraph{Story-level replication.}
+The headline summary is:
+
+\begin{itemize}
+  \item Story-level Pearson $r$ (s2 vs.\ s3, $n = 20$): $\mathbf{0.745}$
+  \item s2 mean CC: $0.0374$, median $0.0330$;\quad
+        s3 mean CC: $0.0512$, median $0.0432$
+  \item s3 $>$ s2 in \textbf{17 of 20} test stories
+  \item Top-1\% CC threshold: s2 $= 0.133$, s3 $= 0.180$
+  \item Positive voxels: s2 $= 95.5\%$, s3 $= 97.8\%$
+\end{itemize}
+
+
+Figure~\ref{fig:check2_bars} (panel~B) sorts all 20 stories by average CC
+and plots s2 and s3 side by side.  Three patterns stand out.
+\textit{High for both subjects}:
+\textit{onapproachtopluto} (s2 $= 0.075$, s3 $= 0.097$) and
+\textit{fromboyhoodtofatherhood} (s2 $= 0.067$, s3 $= 0.098$) are
+structurally rich, event-driven narratives whose contextual semantics the
+fine-tuned BERT representations capture robustly.
+\textit{marryamanwholoveshismother} (s2 $= 0.045$, s3 $= 0.065$) is
+similarly well-predicted by both subjects.
+\textit{Relatively lower for both}:
+\textit{thatthingonmyarm} (s2 $= 0.019$, s3 $= 0.043$),
+\textit{goingthelibertyway} (s2 $= 0.022$, s3 $= 0.058$), and
+\textit{theadvancedbeginner} (s2 $= 0.020$, s3 $= 0.044$) rank lowest
+for s2; notably these stories still produce meaningful CC under the best
+model, whereas GloVe yielded near-zero predictions for the weakest stories.
+\textit{Reversal stories} (s2 $>$ s3, marked $\star$):
+only three stories reverse the typical ordering ---
+\textit{reachingoutbetweenthebars} (s2 $= 0.060$, s3 $= 0.046$),
+\textit{birthofanation} (s2 $= 0.036$, s3 $= 0.034$), and
+\textit{canplanetearthfeedtenbillionpeoplepart1}
+(s2 $= 0.028$, s3 $= 0.024$) --- consistent with individual variation
+rather than a systematic pattern.
+
+\paragraph{Voxelwise CC distributions.}
+Figure~\ref{fig:check2_voxel} (panel~C) shows the full per-voxel CC
+histograms for both subjects under the LoRA mid4 model.
+Two features stand out compared to GloVe.
+First, the distributions are strongly right-shifted: 95.5\% of s2 voxels
+and 97.8\% of s3 voxels have positive CC, versus roughly 60--70\% under
+GloVe.  The model predicts the direction of response correctly for almost
+every voxel.
+Second, the s3 distribution is again shifted uniformly rightward, with
+the s3 mean (0.051) exceeding the s2 mean (0.037) across the entire
+voxel population --- the advantage is not confined to a small elite of
+top voxels.
+
+
+\begin{center}
+\begin{tabular}{lcc}
+  \toprule
+  Method & s2 mean CC & s3/s2 ratio \\
+  \midrule
+  BoW                  & 0.0069 & $1.99\times$ \\
+  Word2Vec             & 0.0124 & $1.87\times$ \\
+  GloVe                & 0.0128 & $1.72\times$ \\
+  Vanilla BERT         & 0.0218 & $1.62\times$ \\
+  Enhanced BERT        & 0.0349 & $1.41\times$ \\
+  LoRA (last4/improved)& 0.0344 & $1.42\times$ \\
+  LoRA (mid4$\star$)   & 0.0374 & $1.37\times$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The shrinking ratio means that better embeddings not only raise absolute
+CC but also \emph{close the gap between subjects}: richer semantic
+representations recover signal that is present in both brains but
+suppressed under weaker models.  This convergence is itself a replication
+argument --- if the model were capturing idiosyncratic noise in one
+subject, the inter-subject ratio would not change systematically with
+embedding quality.
+
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{check2_mid4_B_story_bars}
+  \caption{\textbf{Check 2 (panel B) --- Per-story encoding accuracy for
+           both subjects (LoRA mid4$\star$), sorted by mean CC.}  Dashed
+           lines mark each subject's global mean CC.  $\star$ = the three
+           stories where s2 outperforms s3.  All stories produce positive
+           mean CC under the best model; the ranking is highly consistent
+           across subjects.}
+  \label{fig:check2_bars}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[width=0.8\linewidth]{check2_mid4_C_distributions}
+    \caption{Full per-voxel CC distributions for both subjects (LoRA
+             mid4$\star$).  95.5\% of s2 voxels and 97.8\% of s3 voxels
+             are positive; s3 (red) is shifted uniformly rightward.
+             Dashed lines = subject means; dotted lines = top-1\%
+             thresholds.}
+    \label{fig:check2_voxel}
+\end{figure}
+
+
+\end{document}
